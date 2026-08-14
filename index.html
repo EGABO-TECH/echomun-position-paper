@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECHO MUN Position Paper Studio - Uganda</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React and ReactDOM UMD -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel Standalone for JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- html2pdf.js for client-side PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Google Fonts for Times New Roman lookalike (Tinos / Lora) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+
+    /* Times New Roman / Tinos for formal paper styling */
+    .font-times {
+      font-family: 'Tinos', 'Times New Roman', Times, serif;
+    }
+
+    /* Custom scrollbar for dark UI */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    /* 1-inch margin paper sheet styling */
+    .paper-page-wrapper {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border-radius: 2px;
+    }
+
+    .paper-page {
+      width: 8.5in;
+      min-height: 11in;
+      padding: 1.0in;
+      margin: 0 auto;
+      background: #ffffff !important;
+      color: #000000 !important;
+      box-shadow: none !important;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .paper-section {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    /* Offscreen render container for flawless background exports */
+    .offscreen-export-container {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 8.5in;
+      z-index: -9999;
+      pointer-events: none;
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Strict print layout stylesheet for browser print / save-as-pdf */
+    @media print {
+      @page {
+        size: letter portrait;
+        margin: 0in;
+      }
+      body {
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .paper-page {
+        width: 8.5in !important;
+        min-height: 11in !important;
+        padding: 1.0in !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const DEFAULT_DATA = {
+      delegateName: "EGABO AARON",
+      country: "The Republic of Uganda",
+      committee: "Global Youth Forum (GYF)",
+      topic: "Real Experiences, Real Solutions: Youth Mental Health Across Different Countries",
+      conference: "ECHO Non-Profit Model United Nations",
+      fontSize: "12pt",
+      lineSpacing: "2.0", // Double spaced
+      margins: "1.0in",
+      
+      sections: [
+        {
+          id: "sec1",
+          title: "Section I: Introduction",
+          content: "The Republic of Uganda recognizes youth mental health as a vital cornerstone of national development, public health, and social stability. As one of the youngest populations in the world, with over 75 percent of its inhabitants under the age of 30, Uganda views the psychological well-being of young people not merely as an individual healthcare issue, but as a crucial element of socio-economic progress. While youth across the globe encounter unprecedented social, academic, and economic pressures, systemic barriers often prevent timely intervention and support. Uganda reaffirms its commitment to international dialogue and collaborative frameworks that champion accessible, culturally sensitive, and sustainable mental health solutions for young people worldwide."
+        },
+        {
+          id: "sec2",
+          title: "Section II: Background of the Issue",
+          content: "Globally, mental health conditions account for a significant portion of the burden of disease among adolescents and young adults, as highlighted in reports by the World Health Organization (WHO) and UNICEF. In developing nations and rapidly growing economies alike, young individuals face interconnected challenges, including heightened academic stress, severe family expectations, digital burnout, and systemic anxiety regarding future employment. The rapid evolution of social media platforms has amplified peer pressure and social comparison, aggravating rates of anxiety and depression among youth. Furthermore, resource constraints in low- and middle-income countries often result in a significant treatment gap, where mental healthcare facilities and trained personnel remain disproportionately concentrated in urban centers, leaving rural youth underserved. Addressing these issues requires moving past stigma and establishing structured, community-rooted support networks."
+        },
+        {
+          id: "sec3",
+          title: "Section III: Country’s Position",
+          content: "The Republic of Uganda has taken deliberate legislative and strategic steps to address mental health within its national framework. The enactment of the Mental Health Act of 2018 marked a fundamental shift toward protecting the rights of individuals experiencing mental health conditions and decentralizing care into community health centers. Through the Ministry of Health and the Ministry of Education and Sports, Uganda has increasingly emphasized integrating psychosocial support into educational institutions and community youth centers. However, national efforts continue to navigate resource limitations, public stigma, and the need for more specialized mental health professionals trained in adolescent psychology. Uganda advocates for international policy frameworks that respect national sovereignty while facilitating technical exchange and capacity building for mental health infrastructure in developing nations."
+        },
+        {
+          id: "sec4",
+          title: "Section IV: Proposed Solutions",
+          content: "To cultivate actionable, global solutions for youth mental health, the Republic of Uganda proposes a three-pronged strategy rooted in community integration, digital awareness, and international partnership:\n\n1. Integration of School and Community-Based Peer Support Frameworks: Member States should prioritize establishing standardized, peer-led mental health first-aid programs in secondary and tertiary educational institutions. Training youth leaders to recognize early signs of burnout, anxiety, and distress creates low-barrier, destigmatized entry points for support, relieving pressure on formal healthcare systems.\n\n2. Cross-Border Technical Assistance and Capacity Building: International bodies, including WHO and UNICEF, should partner with regional blocs—such as the East African Community (EAC)—to fund training pipelines for child and adolescent mental health specialists. Sharing open-source diagnostic and training resources will allow developing nations to expand their mental health workforce efficiently.\n\n3. Promoting Digital Well-being and Public Awareness Campaigns: Governments, in collaboration with civil society, should implement public education campaigns targeting the impacts of social media pressure and academic stress. Establishing national guidelines for digital well-being, coupled with community dialogue involving parents and educators, will help address the root socio-cultural drivers of youth anxiety."
+        },
+        {
+          id: "sec5",
+          title: "Section V: Conclusion",
+          content: "The Republic of Uganda remains steadfast in its dedication to promoting the rights, dignity, and psychological well-being of young people. Mental health challenges among youth know no borders, and addressing them demands unified action, resource sharing, and empathetic leadership. Uganda looks forward to engaging constructively with all delegates within the Global Youth Forum to draft practical, inclusive resolutions that empower youth across all nations to thrive."
+        }
+      ]
+    };
+
+    function App() {
+      const [docData, setDocData] = useState(DEFAULT_DATA);
+      const [activeTab, setActiveTab] = useState("editor"); // 'editor', 'preview', 'checklist'
+      const [activeSection, setActiveSection] = useState("sec1");
+      const [isExporting, setIsExporting] = useState(false);
+      const [toastMsg, setToastMsg] = useState(null);
+      const paperRef = useRef(null);
+      const exportPaperRef = useRef(null);
+
+      // Show temporary toast message
+      const showToast = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 3500);
+      };
+
+      // 1:1 High-Resolution PDF Download (Single Continuous Page or Multi-Page)
+      const handleDownloadPDF = (splitPages = false) => {
+        setIsExporting(true);
+        showToast(splitPages ? "Generating standard multi-page PDF..." : "Generating single-page PDF (matching screen)...");
+
+        // Always target the offscreen clean element to avoid UI layout conflicts, scale-down margins, or hidden states
+        const element = exportPaperRef.current;
+        
+        // Measure element height to make it exactly one page if splitPages is false
+        const elementHeightPx = element.offsetHeight || 1056; // Fallback to 11 inches in pixels (96dpi)
+        const elementWidthPx = element.offsetWidth || 816;    // Fallback to 8.5 inches in pixels
+        const heightInInches = splitPages ? 11 : (elementHeightPx / elementWidthPx) * 8.5;
+
+        const opt = {
+          margin:       0,
+          filename:     `Position_Paper_Uganda_${docData.delegateName.replace(/\s+/g, '_')}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { 
+            scale: 3, 
+            useCORS: true, 
+            logging: false, 
+            backgroundColor: '#ffffff',
+            letterRendering: true
+          },
+          jsPDF:        { 
+            unit: 'in', 
+            format: splitPages ? 'letter' : [8.5, heightInInches], 
+            orientation: 'portrait' 
+          },
+          pagebreak:    splitPages 
+            ? { mode: ['avoid-all', 'css', 'legacy'] }
+            : { mode: 'avoid-all' }
+        };
+
+        if (window.html2pdf) {
+          window.html2pdf().set(opt).from(element).save().then(() => {
+            setIsExporting(false);
+            showToast("PDF downloaded successfully!");
+          }).catch((err) => {
+            console.error("PDF Export error:", err);
+            setIsExporting(false);
+            // Fallback to browser print
+            window.print();
+          });
+        } else {
+          setIsExporting(false);
+          window.print();
+        }
+      };
+
+      // Native Microsoft Word / Google Docs export (.doc) preserving Times New Roman, double space, and 1" margins
+      const handleDownloadWord = () => {
+        showToast("Generating Word Document (.doc)...");
+        const content = `
+          <html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+          <head>
+            <meta charset='utf-8'>
+            <title>${docData.topic}</title>
+            <style>
+              @page WordSection1 {
+                size: 8.5in 11.0in;
+                margin: 1.0in 1.0in 1.0in 1.0in;
+                mso-header-margin: 0.5in;
+                mso-footer-margin: 0.5in;
+                mso-paper-source: 0;
+              }
+              div.WordSection1 {
+                page: WordSection1;
+              }
+              body {
+                font-family: 'Times New Roman', Times, serif;
+                font-size: 12pt;
+                line-height: 2.0;
+                color: #000000;
+              }
+              h1 {
+                font-size: 14pt;
+                text-align: center;
+                text-transform: uppercase;
+                font-weight: bold;
+                margin-bottom: 12pt;
+              }
+              .header-meta {
+                text-align: center;
+                margin-bottom: 18pt;
+                font-size: 11pt;
+                line-height: 1.5;
+              }
+              .section-title {
+                font-size: 12pt;
+                font-weight: bold;
+                border-bottom: 1px solid #333333;
+                margin-top: 18pt;
+                margin-bottom: 6pt;
+              }
+              p {
+                text-indent: 0.5in;
+                text-align: justify;
+                margin-bottom: 12pt;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="WordSection1">
+              <h1>${docData.conference}</h1>
+              <div class="header-meta">
+                <p style="text-indent:0; text-align:center;"><strong>COMMITTEE:</strong> ${docData.committee}</p>
+                <p style="text-indent:0; text-align:center;"><strong>TOPIC:</strong> ${docData.topic}</p>
+                <p style="text-indent:0; text-align:center;"><strong>COUNTRY:</strong> ${docData.country}</p>
+                <p style="text-indent:0; text-align:center;"><strong>DELEGATE:</strong> ${docData.delegateName}</p>
+              </div>
+              <hr style="border: none; border-bottom: 2px solid #000000; margin-bottom: 18pt;"/>
+              ${docData.sections.map(sec => `
+                <div class="section-title">${sec.title}</div>
+                ${sec.content.split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br/>')}</p>`).join('')}
+              `).join('')}
+            </div>
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Position_Paper_Uganda_${docData.delegateName.replace(/\s+/g, '_')}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Word document downloaded successfully!");
+      };
+
+      // High-Resolution PNG Image Download
+      const handleDownloadPNG = () => {
+        showToast("Generating high-resolution image...");
+        const element = exportPaperRef.current;
+        if (window.html2canvas) {
+          window.html2canvas(element, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false
+          }).then((canvas) => {
+            const link = document.createElement('a');
+            link.download = `Position_Paper_Uganda_${docData.delegateName.replace(/\s+/g, '_')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showToast("PNG image downloaded successfully!");
+          }).catch((err) => {
+            console.error("PNG Export error:", err);
+            showToast("PNG export failed. Try PDF export.");
+          });
+        } else {
+          showToast("Export library missing. Try PDF export.");
+        }
+      };
+
+      // Native browser print dialog
+      const handlePrint = () => {
+        showToast("Opening system print dialog...");
+        window.print();
+      };
+
+      // Word count calculation
+      const getTotalWordCount = () => {
+        return docData.sections.reduce((acc, sec) => {
+          const words = sec.content.trim().split(/\s+/).filter(Boolean).length;
+          return acc + words;
+        }, 0);
+      };
+
+      // Update Section Content
+      const updateSectionContent = (id, newContent) => {
+        setDocData(prev => ({
+          ...prev,
+          sections: prev.sections.map(sec => sec.id === id ? { ...sec, content: newContent } : sec)
+        }));
+      };
+
+      // Reset to original draft
+      const handleReset = () => {
+        setDocData(DEFAULT_DATA);
+        showToast("Document restored to original draft.");
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100 font-sans">
+          {/* Top Navigation Bar */}
+          <header className="no-print bg-slate-950 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="bg-sky-600 p-2 rounded-lg text-white font-bold text-xl shadow-lg shadow-sky-900/50">
+                🇺🇬
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight text-slate-50 flex items-center gap-2">
+                  ECHO MUN Position Paper Studio
+                  <span className="text-xs font-semibold bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30">
+                    GYF Uganda
+                  </span>
+                </h1>
+                <p className="text-xs text-slate-400">Delegate: {docData.delegateName} | Topic: Youth Mental Health</p>
+              </div>
+            </div>
+
+            {/* Main Action Buttons */}
+            <div className="flex items-center gap-3">
+              <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <button 
+                  onClick={() => setActiveTab("editor")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    activeTab === "editor" ? "bg-sky-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  ✏️ Edit Content
+                </button>
+                <button 
+                  onClick={() => setActiveTab("preview")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    activeTab === "preview" ? "bg-sky-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  📄 Paper View
+                </button>
+                <button 
+                  onClick={() => setActiveTab("checklist")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    activeTab === "checklist" ? "bg-sky-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  ✅ Guidelines Audit
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={isExporting}
+                  className="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2 rounded-lg shadow-lg shadow-emerald-900/40 border border-emerald-500/30 flex items-center gap-1.5 transition-all disabled:opacity-50"
+                  title="Download pixel-perfect PDF matching layout exactly"
+                >
+                  <span>📥</span>
+                  <span>{isExporting ? "Exporting..." : "Download PDF"}</span>
+                </button>
+                
+                <button
+                  onClick={handleDownloadWord}
+                  className="bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-semibold text-xs px-3 py-2 rounded-lg shadow-lg shadow-sky-900/40 border border-sky-500/30 flex items-center gap-1.5 transition-all"
+                  title="Export to Microsoft Word / Google Docs (.doc)"
+                >
+                  <span>📝</span>
+                  <span>Word (.doc)</span>
+                </button>
+
+                <button
+                  onClick={handleDownloadPNG}
+                  className="bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 hover:text-white font-semibold text-xs px-3 py-2 rounded-lg shadow-lg border border-slate-700 flex items-center gap-1.5 transition-all"
+                  title="Download as HD PNG Image"
+                >
+                  <span>🖼️</span>
+                  <span>PNG</span>
+                </button>
+
+                <button
+                  onClick={handlePrint}
+                  className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-xs px-3 py-2 rounded-lg shadow-lg shadow-indigo-900/40 border border-indigo-500/30 flex items-center gap-1.5 transition-all"
+                  title="Open system print dialog"
+                >
+                  <span>🖨️</span>
+                  <span>Print</span>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {/* Toast Notification */}
+          {toastMsg && (
+            <div className="no-print fixed bottom-5 right-5 bg-slate-800 border border-sky-500 text-sky-200 px-4 py-3 rounded-lg shadow-2xl text-xs font-medium flex items-center gap-2 z-50 animate-bounce">
+              <span>🔔</span>
+              <span>{toastMsg}</span>
+            </div>
+          )}
+
+          {/* Main Workspace Layout */}
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+            
+            {}
+            <aside className="no-print w-full md:w-80 bg-slate-950 border-r border-slate-800 p-5 flex flex-col gap-6 overflow-y-auto">
+              
+              {/* Document Overview Metadata */}
+              <div>
+                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Delegate Information</h2>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Delegate Name</label>
+                    <input 
+                      type="text" 
+                      value={docData.delegateName}
+                      onChange={(e) => setDocData({...docData, delegateName: e.target.value})}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Assigned Nation</label>
+                    <input 
+                      type="text" 
+                      value={docData.country}
+                      onChange={(e) => setDocData({...docData, country: e.target.value})}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Committee</label>
+                    <input 
+                      type="text" 
+                      value={docData.committee}
+                      onChange={(e) => setDocData({...docData, committee: e.target.value})}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Topic</label>
+                    <textarea 
+                      rows="2"
+                      value={docData.topic}
+                      onChange={(e) => setDocData({...docData, topic: e.target.value})}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500 resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Formatting Quick Controls */}
+              <div className="border-t border-slate-800 pt-5">
+                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Formatting Specs</h2>
+                <div className="space-y-3 text-xs">
+                  <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded border border-slate-800">
+                    <span className="text-slate-400">Font Family</span>
+                    <span className="font-mono text-sky-400 font-semibold">Times New Roman</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded border border-slate-800">
+                    <span className="text-slate-400">Font Size</span>
+                    <span className="font-mono text-sky-400 font-semibold">{docData.fontSize}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded border border-slate-800">
+                    <span className="text-slate-400">Line Spacing</span>
+                    <span className="font-mono text-emerald-400 font-semibold">2.0 (Double)</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded border border-slate-800">
+                    <span className="text-slate-400">Margins</span>
+                    <span className="font-mono text-emerald-400 font-semibold">1.0 Inch All Sides</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Word Stats */}
+              <div className="border-t border-slate-800 pt-5">
+                <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Document Statistics</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-center">
+                    <div className="text-lg font-bold text-sky-400">{getTotalWordCount()}</div>
+                    <div className="text-[10px] text-slate-400 uppercase mt-0.5">Total Words</div>
+                  </div>
+                  <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-center">
+                    <div className="text-lg font-bold text-emerald-400">~2 Pages</div>
+                    <div className="text-[10px] text-slate-400 uppercase mt-0.5">Estimated Length</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              <div className="mt-auto border-t border-slate-800 pt-4">
+                <button 
+                  onClick={handleReset}
+                  className="w-full text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 border border-slate-800 hover:border-rose-900/50 py-2 rounded text-xs transition-all"
+                >
+                  ↺ Reset to Default Draft
+                </button>
+              </div>
+            </aside>
+
+            {}
+            <main className="flex-1 bg-slate-900 overflow-y-auto p-4 md:p-8 flex justify-center">
+              
+              {/* TAB 1: INTERACTIVE EDITOR */}
+              {activeTab === "editor" && (
+                <div className="w-full max-w-4xl space-y-6">
+                  
+                  {/* Section Navigator Buttons */}
+                  <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-4">
+                    {docData.sections.map((sec, idx) => (
+                      <button
+                        key={sec.id}
+                        onClick={() => setActiveSection(sec.id)}
+                        className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all ${
+                          activeSection === sec.id
+                            ? "bg-sky-600 text-white border-sky-500 shadow-md"
+                            : "bg-slate-800/80 text-slate-300 border-slate-700/60 hover:bg-slate-800"
+                        }`}
+                      >
+                        Sec {idx + 1}: {sec.title.split(":")[1]?.trim() || sec.title}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Active Section Editor Card */}
+                  {docData.sections.map((sec) => {
+                    if (sec.id !== activeSection) return null;
+                    return (
+                      <div key={sec.id} className="bg-slate-950 border border-slate-800 rounded-xl p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                          <h3 className="text-base font-bold text-sky-400 flex items-center gap-2">
+                            <span>✍️</span> {sec.title}
+                          </h3>
+                          <span className="text-xs text-slate-500 font-mono">
+                            {sec.content.trim().split(/\s+/).filter(Boolean).length} words
+                          </span>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+                            Section Paragraph Text
+                          </label>
+                          <textarea
+                            rows="12"
+                            value={sec.content}
+                            onChange={(e) => updateSectionContent(sec.id, e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg p-4 text-sm text-slate-100 font-times leading-relaxed focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
+                            placeholder="Write official diplomatic stance here..."
+                          />
+                        </div>
+
+                        <div className="text-xs text-slate-400 bg-slate-900/60 p-3 rounded-lg border border-slate-800/80 flex items-start gap-2">
+                          <span className="text-sky-400 font-bold">Tip:</span>
+                          <span>
+                            Keep the tone formal, objective, and third-person ("The Republic of Uganda believes..."). Avoid first-person pronouns like "I" or "we".
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {}
+              {(activeTab === "preview" || activeTab === "editor") && (
+                <div className={`w-full flex flex-col items-center justify-start ${activeTab === "editor" ? "hidden" : "block"}`}>
+                  
+                  {/* Visual Preview Banner */}
+                  <div className="w-full max-w-[8.5in] mb-4 bg-sky-950/40 border border-sky-500/30 rounded-lg p-3.5 text-xs text-sky-200 flex flex-wrap items-center justify-between gap-3 no-print">
+                    <div className="flex items-center gap-2 max-w-md">
+                      <span className="text-base">💡</span>
+                      <span>This is the official position paper sheet. You can download it as <strong>One Single Page</strong> matching this screen view exactly, or as <strong>Standard Letter pages</strong>.</span>
+                    </div>
+                    <div className="flex items-center gap-2 sm:ml-auto">
+                      <button 
+                        onClick={() => handleDownloadPDF(false)}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded transition-all text-[11px]"
+                      >
+                        📥 Download Full Single Page
+                      </button>
+                      <button 
+                        onClick={() => handleDownloadPDF(true)}
+                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded border border-slate-700 transition-all text-[11px]"
+                      >
+                        📄 Download Multi-Page
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Paper Document Container (Paper Sheet Emulation) with screen-only shadow wrapper */}
+                  <div className="paper-page-wrapper no-print mb-8">
+                    <div 
+                      ref={paperRef}
+                      className="paper-page font-times text-slate-900 leading-relaxed transition-all"
+                      style={{ fontSize: docData.fontSize }}
+                    >
+                      {/* Position Paper Header Block */}
+                      <div className="border-b-2 border-slate-900 pb-4 mb-6 text-center">
+                        <h1 className="font-bold text-xl uppercase tracking-wider mb-2">
+                          {docData.conference}
+                        </h1>
+                        <div className="text-sm space-y-1 font-serif text-slate-800">
+                          <p><strong className="font-bold">COMMITTEE:</strong> {docData.committee}</p>
+                          <p><strong className="font-bold">TOPIC:</strong> {docData.topic}</p>
+                          <p><strong className="font-bold">COUNTRY:</strong> {docData.country}</p>
+                          <p><strong className="font-bold">DELEGATE:</strong> {docData.delegateName}</p>
+                        </div>
+                      </div>
+
+                      {/* Paper Body Sections */}
+                      <div className="space-y-6 text-justify" style={{ lineHeight: docData.lineSpacing }}>
+                        {docData.sections.map((sec) => (
+                          <div key={sec.id} className="space-y-2 paper-section">
+                            <h2 className="font-bold text-base tracking-wide border-b border-slate-300 pb-1 mb-2">
+                              {sec.title}
+                            </h2>
+                            {sec.content.split('\n\n').map((paragraph, pIdx) => (
+                              <p key={pIdx} className="indent-8 text-justify">
+                                {paragraph}
+                              </p>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Footer / Page Number Indicator */}
+                      <div className="mt-12 pt-4 border-t border-slate-300 text-center text-xs text-slate-500 font-sans">
+                        <span>Republic of Uganda Position Paper — Global Youth Forum (GYF) — Page 1</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Offscreen background export container (ALWAYS mounted, clean styling, NO box shadows, NO hidden attributes) */}
+              <div className="offscreen-export-container">
+                <div 
+                  ref={exportPaperRef}
+                  className="paper-page font-times text-slate-900 leading-relaxed"
+                  style={{ fontSize: docData.fontSize }}
+                >
+                  {/* Position Paper Header Block */}
+                  <div className="border-b-2 border-slate-900 pb-4 mb-6 text-center">
+                    <h1 className="font-bold text-xl uppercase tracking-wider mb-2">
+                      {docData.conference}
+                    </h1>
+                    <div className="text-sm space-y-1 font-serif text-slate-800">
+                      <p><strong className="font-bold">COMMITTEE:</strong> {docData.committee}</p>
+                      <p><strong className="font-bold">TOPIC:</strong> {docData.topic}</p>
+                      <p><strong className="font-bold">COUNTRY:</strong> {docData.country}</p>
+                      <p><strong className="font-bold">DELEGATE:</strong> {docData.delegateName}</p>
+                    </div>
+                  </div>
+
+                  {/* Paper Body Sections */}
+                  <div className="space-y-6 text-justify" style={{ lineHeight: docData.lineSpacing }}>
+                    {docData.sections.map((sec) => (
+                      <div key={sec.id} className="space-y-2 paper-section">
+                        <h2 className="font-bold text-base tracking-wide border-b border-slate-300 pb-1 mb-2">
+                          {sec.title}
+                        </h2>
+                        {sec.content.split('\n\n').map((paragraph, pIdx) => (
+                          <p key={pIdx} className="indent-8 text-justify">
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer / Page Number Indicator */}
+                  <div className="mt-12 pt-4 border-t border-slate-300 text-center text-xs text-slate-500 font-sans">
+                    <span>Republic of Uganda Position Paper — Global Youth Forum (GYF) — Page 1</span>
+                  </div>
+                </div>
+              </div>
+
+              {}
+              {activeTab === "checklist" && (
+                <div className="w-full max-w-3xl space-y-6">
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 shadow-2xl">
+                    <h2 className="text-lg font-bold text-sky-400 mb-2 flex items-center gap-2">
+                      <span>✅</span> ECHO MUN Guidelines Compliance Audit
+                    </h2>
+                    <p className="text-xs text-slate-400 mb-6">
+                      Automated audit against official ECHO Non-Profit Model United Nations requirements.
+                    </p>
+
+                    <div className="space-y-4">
+                      {/* Check 1: Length & Pages */}
+                      <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 flex items-start gap-4">
+                        <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-full text-lg">
+                          ✓
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-200">Length Requirement (1–3 Pages)</h3>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Current word count is <strong className="text-slate-200">{getTotalWordCount()} words</strong> (approx. 2 double-spaced pages), which falls perfectly within the required 1 to 3 page range.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Check 2: Typography & Font */}
+                      <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 flex items-start gap-4">
+                        <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-full text-lg">
+                          ✓
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-200">Typography & Font Size</h3>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Set to <strong className="text-slate-200">Times New Roman 12 pt</strong> as mandated in the position paper guide.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Check 3: Spacing & Margins */}
+                      <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 flex items-start gap-4">
+                        <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-full text-lg">
+                          ✓
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-200">Margins & Line Spacing</h3>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Document uses <strong className="text-slate-200">1-inch margins on all sides</strong> and <strong className="text-slate-200">Double Spacing (2.0 line height)</strong>.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Check 4: Mandatory Sections */}
+                      <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 flex items-start gap-4">
+                        <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-full text-lg">
+                          ✓
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-200">5-Part Outline Structure</h3>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Contains all mandatory sections: Section I (Introduction), Section II (Background), Section III (Country Position), Section IV (Proposed Solutions - 3 action points), and Section V (Conclusion).
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Check 5: Diplomatic Tone */}
+                      <div className="bg-slate-900 p-4 rounded-lg border border-slate-800 flex items-start gap-4">
+                        <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-full text-lg">
+                          ✓
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-200">Official Diplomatic Perspective</h3>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Drafted strictly from Uganda's sovereign national stance, focusing on legislative frameworks (Mental Health Act 2018), youth demographics (75% under 30), and regional cooperation (EAC).
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+                      <button
+                        onClick={handleDownloadPDF}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-5 py-2.5 rounded-lg shadow-lg"
+                      >
+                        Ready to Submit — Export PDF Now 📥
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
